@@ -14,16 +14,6 @@ namespace ACME.WebUI
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            // Arrange
-            TimeController timeController = new TimeController();
-            string table;
-
-            // Act
-            timeController.AddEmployee("RENE=MO10:15-12:00,TU10:00-12:00,TH013:00-13:15,SA14:00-18:00,SU20:00-21:00");
-            timeController.AddEmployee("ASTRID=MO10:00-12:00,TH12:00-14:00,SU20:00-21:00");
-            table = timeController.GenerateTable();
-
-
 
         }
 
@@ -34,7 +24,8 @@ namespace ACME.WebUI
                 string folderPathTemp = Server.MapPath("~");
                 string textFile = folderPathTemp + "Employees.txt";
                 LoadFileUpload.SaveAs(textFile);
-                TimeController timeController = new TimeController();
+                string logPath = Server.MapPath("~\\log.txt");
+                TimeController timeController = new TimeController(logPath);
                 using (StreamReader file = new StreamReader(textFile))
                 {
                     int lineCounter = 0;
@@ -44,11 +35,12 @@ namespace ACME.WebUI
                         lineCounter++;
                         if (lineText.Trim().Length > 1)
                         {
-                            timeController.AddEmployee(lineText.Trim());
+                            timeController.AddEmployee(lineText.Trim(), lineCounter);
                         }
                     }
                     file.Close();
                 }
+                File.Delete(textFile);
 
                 OutputDiv.InnerHtml = timeController.GenerateTable();
             }

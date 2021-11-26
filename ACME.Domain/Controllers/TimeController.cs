@@ -11,9 +11,11 @@ namespace ACME.Domain.Controllers
     public class TimeController
     {
         public List<Employee> Employees { get; set; }
-        public TimeController()
+        private LogController log;
+        public TimeController(string logPath = "")
         {
             Employees = new List<Employee>();
+            log = new LogController(logPath);
         }
         public void AddEmployee(string line, int lineNumber = 0)
         {
@@ -21,7 +23,7 @@ namespace ACME.Domain.Controllers
 
             if (line.Split('=').Length < 2)
             {
-                Console.WriteLine("Format error in line #" + lineNumber);
+                log.WriteLog("Format error in line #" + lineNumber);
                 return;
             }
 
@@ -29,7 +31,7 @@ namespace ACME.Domain.Controllers
             
             if (name.Trim().Length == 0)
             {
-                Console.WriteLine("Name not found in line #" + lineNumber);
+                log.WriteLog("Name not found in line #" + lineNumber);
                 return;
             }
 
@@ -37,7 +39,7 @@ namespace ACME.Domain.Controllers
             {
                 if (iEmployee.Name.Equals(name))
                 {
-                    Console.WriteLine("Name " + name + " already registered");
+                    log.WriteLog("Name " + name + " already registered");
                     return;
                 }
             }
@@ -49,7 +51,7 @@ namespace ACME.Domain.Controllers
 
             if (days.Trim().Length == 0)
             {
-                Console.WriteLine("Schedules not found in line #" + lineNumber);
+                log.WriteLog("Schedules not found in line #" + lineNumber);
                 return;
             }
 
@@ -61,71 +63,66 @@ namespace ACME.Domain.Controllers
                 string hours = day.Substring(2).Trim();
                 if (hours.Split('-').Length < 2)
                 {
-                    Console.WriteLine("Schedule format error in line #" + lineNumber + ", schedule position #" + dayPosition + 1);
+                    log.WriteLog("Schedule format error in line #" + lineNumber + ", schedule position #" + (dayPosition + 1));
+                    continue;
                 }
-                else
+                if (!ValidateDay(dayName))
                 {
-                    if (!ValidateDay(dayName))
+                    log.WriteLog("Invalid day in line #" + lineNumber + ", schedule position #" + (dayPosition + 1));
+                    continue;
+                }
+
+                bool dayRepeated = false;
+                foreach (Schedule iSchedule in employee.Schedules)
+                {
+                    if (iSchedule.Day.Equals(dayName))
                     {
-                        Console.WriteLine("Invalid day in line #" + lineNumber + ", schedule position #" + dayPosition + 1);
+                        log.WriteLog("Day " + dayName + " already registered in line #" + lineNumber);
+                        dayRepeated = true;
+                        break;
                     }
-                    else
+                }
+                
+                if (!dayRepeated)
+                {
+                    string inTime = hours.Split('-')[0];
+                    string outTime = hours.Split('-')[1];
+
+                    if (inTime.Split(':').Length < 2 || outTime.Split(':').Length < 2)
                     {
-                        bool dayRepeated = false;
-                        foreach (Schedule iSchedule in employee.Schedules)
-                        {
-                            if (iSchedule.Day.Equals(dayName))
-                            {
-                                Console.WriteLine("Day " + dayName + " already registered in line #" + lineNumber);
-                                dayRepeated = true;
-                            }
-                        }
-                        
-                        if (!dayRepeated)
-                        {
-                            string inTime = hours.Split('-')[0];
-                            string outTime = hours.Split('-')[1];
-
-                            if (inTime.Split(':').Length < 2 || outTime.Split(':').Length < 2)
-                            {
-                                Console.WriteLine("Time format error in line #" + lineNumber + ", schedule position #" + dayPosition + 1);
-                            }
-                            else
-                            {
-                                int inHour = int.Parse(inTime.Split(':')[0]);
-                                int inMinute = int.Parse(inTime.Split(':')[1]);
-                                int outHour = int.Parse(outTime.Split(':')[0]);
-                                int outMinute = int.Parse(outTime.Split(':')[1]);
-
-                                if (inHour < 0 || inHour > 23 || inMinute < 0 || inMinute > 59 || outHour < 0 || outHour > 23 ||
-                                    outMinute < 0 || outMinute > 59)
-                                {
-                                    Console.WriteLine("Time format error in line #" + line + ", schedule position #" + dayPosition + 1);
-                                }
-                                else
-                                {
-                                    DateTime timeIn = new DateTime(2000, 1, 1, inHour, inMinute, 0);
-                                    DateTime timeOut = new DateTime(2000, 1, 1, outHour, outMinute, 0);
-                                    if (DateTime.Compare(timeIn,timeOut) > 0)
-                                    {
-                                        Console.WriteLine("Timeline error in line #" + lineNumber + ", schedule position #" + dayPosition + 1);
-                                    }
-                                    else
-                                    {
-                                        Schedule schedule = new Schedule();
-                                        schedule.Day = dayName;
-                                        schedule.TimeIn = timeIn;
-                                        schedule.TimeOut = timeOut;
-
-                                        employee.Schedules.Add(schedule);
-                                    }
-                                }
-                            }
-                        }
+                        log.WriteLog("Time format error in line #" + lineNumber + ", schedule position #" + (dayPosition + 1));
+                        continue;
                     }
+                    int inHour = int.Parse(inTime.Split(':')[0]);
+                    int inMinute = int.Parse(inTime.Split(':')[1]);
+                    int outHour = int.Parse(outTime.Split(':')[0]);
+                    int outMinute = int.Parse(outTime.Split(':')[1]);
+
+                    if (inHour < 0 || inHour > 23 || inMinute < 0 || inMinute > 59 || outHour < 0 || outHour > 23 ||
+                        outMinute < 0 || outMinute > 59)
+                    {
+                        log.WriteLog("Time format error in line #" + lineNumber + ", schedule position #" + (dayPosition + 1));
+                        continue;
+                    }
+
+                    DateTime timeIn = new DateTime(2000, 1, 1, inHour, inMinute, 0);
+                    DateTime timeOut = new DateTime(2000, 1, 1, outHour, outMinute, 0);
+                    if (DateTime.Compare(timeIn,timeOut) > 0)
+                    {
+                        log.WriteLog("Timeline error in line #" + lineNumber + ", schedule position #" + (dayPosition + 1));
+                        continue;
+                    }
+                    Schedule schedule = new Schedule()
+                    {
+                        Day = dayName,
+                        TimeIn = timeIn,
+                        TimeOut = timeOut
+
+                    };
+
+                    employee.Schedules.Add(schedule);
                 }
             }
-
             Employees.Add(employee);
         }
 

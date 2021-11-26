@@ -40,6 +40,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Class1.cs" />
+    <Compile Include="Controllers\LogController.cs" />
     <Compile Include="Controllers\TimeController.cs" />
     <Compile Include="Models\Employee.cs" />
     <Compile Include="Models\Schedule.cs" />

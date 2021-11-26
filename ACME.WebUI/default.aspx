@@ -11,7 +11,9 @@
 <body style="padding-top: 50px;">
 <form id="form1" runat="server">
         <div class="container">
+            <h1>ACME - Hour Control</h1>
             <div style="padding: 40px 15px; text-align: left;">
+                <p>Please select the text file with the employees schedule data</p>
                 <div class="input-group">
                     <label class="input-group-btn">
                         <span class="btn btn-primary">
